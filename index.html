@@ -1,229 +1,250 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Midnight Lab</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Midnight Othello</title>
 
-  <style>
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-    }
+<style>
+body{
+  margin:0;
+  background:#050505;
+  color:white;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  font-family:sans-serif;
+}
 
-    body{
-      background:black;
-      color:white;
-      font-family:sans-serif;
-      overflow:hidden;
-    }
+h1{
+  margin-top:20px;
+  letter-spacing:5px;
+}
 
-    canvas{
-      position:fixed;
-      top:0;
-      left:0;
-      z-index:-1;
-    }
+#info{
+  margin-top:10px;
+  font-size:1.1rem;
+}
 
-    .container{
-      width:100%;
-      height:100vh;
+#board{
+  margin-top:25px;
+  display:grid;
+  grid-template-columns:repeat(8,64px);
+  grid-template-rows:repeat(8,64px);
+  gap:3px;
+}
 
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-      align-items:center;
+.cell{
+  width:64px;
+  height:64px;
+  background:#064d2f;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  cursor:pointer;
+}
 
-      gap:30px;
-    }
+.cell.valid{
+  background:#0b7a49;
+}
 
-    h1{
-      font-size:5rem;
-      letter-spacing:8px;
+.stone{
+  width:50px;
+  height:50px;
+  border-radius:50%;
+}
 
-      animation: glow 2s infinite alternate;
-    }
+.black{
+  background:#050505;
+  box-shadow:0 0 10px #000;
+}
 
-    p{
-      opacity:0.7;
-      font-size:1.1rem;
-    }
+.white{
+  background:white;
+  box-shadow:0 0 10px #fff;
+}
 
-    .buttons{
-      display:flex;
-      gap:20px;
-    }
-
-    button{
-      background:rgba(255,255,255,0.05);
-      border:1px solid rgba(255,255,255,0.2);
-
-      color:white;
-
-      padding:15px 30px;
-
-      cursor:pointer;
-
-      transition:0.3s;
-
-      backdrop-filter:blur(10px);
-    }
-
-    button:hover{
-      background:white;
-      color:black;
-
-      transform:scale(1.1);
-    }
-
-    .panel{
-      margin-top:20px;
-      width:80%;
-      max-width:700px;
-
-      text-align:center;
-
-      line-height:2;
-
-      opacity:0.8;
-    }
-
-    @keyframes glow{
-      from{
-        text-shadow:0 0 10px white;
-      }
-
-      to{
-        text-shadow:
-          0 0 20px cyan,
-          0 0 40px cyan,
-          0 0 60px cyan;
-      }
-    }
-  </style>
+button{
+  margin-top:20px;
+  padding:10px 20px;
+  background:white;
+  border:none;
+  cursor:pointer;
+}
+</style>
 </head>
 
 <body>
 
-  <canvas id="bg"></canvas>
+<h1>MIDNIGHT OTHELLO</h1>
+<div id="info">BLACK TURN</div>
+<div id="board"></div>
+<button onclick="restartGame()">RESTART</button>
 
-  <div class="container">
+<script>
+const boardElement = document.getElementById("board");
+const info = document.getElementById("info");
 
-    <h1>Midnight Lab</h1>
+let board = [];
+let currentPlayer = 1;
 
-    <p>
-      strange playground for thoughts
-    </p>
+const directions = [
+  [-1,-1], [0,-1], [1,-1],
+  [-1, 0],         [1, 0],
+  [-1, 1], [0, 1], [1, 1]
+];
 
-    <div class="buttons">
-      <button onclick="changePanel('observe')">
-        OBSERVE
-      </button>
+function initBoard(){
+  board = Array.from({length:8}, () => Array(8).fill(0));
 
-      <button onclick="changePanel('play')">
-        PLAY
-      </button>
+  board[3][3] = 2;
+  board[3][4] = 1;
+  board[4][3] = 1;
+  board[4][4] = 2;
 
-      <button onclick="changePanel('study')">
-        STUDY
-      </button>
-    </div>
+  currentPlayer = 1;
+}
 
-    <div class="panel" id="panel">
-      Welcome to Midnight Lab.
-    </div>
+function isInside(x,y){
+  return x >= 0 && x < 8 && y >= 0 && y < 8;
+}
 
-  </div>
+function getFlips(x,y,player){
+  if(board[y][x] !== 0){
+    return [];
+  }
 
-  <script>
+  const opponent = player === 1 ? 2 : 1;
+  let flips = [];
 
-    const panel = document.getElementById("panel");
+  for(const [dx,dy] of directions){
+    let nx = x + dx;
+    let ny = y + dy;
+    let line = [];
 
-    function changePanel(mode){
-
-      if(mode === "observe"){
-        panel.innerHTML = `
-          Watch the particles drift slowly
-          through the dark.
-        `;
-      }
-
-      if(mode === "play"){
-        panel.innerHTML = `
-          Click the screen and create waves.
-        `;
-      }
-
-      if(mode === "study"){
-        panel.innerHTML = `
-          Focus mode coming soon...
-        `;
-      }
-
+    while(isInside(nx,ny) && board[ny][nx] === opponent){
+      line.push([nx,ny]);
+      nx += dx;
+      ny += dy;
     }
 
-    // canvas
+    if(isInside(nx,ny) && board[ny][nx] === player && line.length > 0){
+      flips = flips.concat(line);
+    }
+  }
 
-    const canvas = document.getElementById("bg");
-    const ctx = canvas.getContext("2d");
+  return flips;
+}
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+function hasValidMove(player){
+  for(let y=0; y<8; y++){
+    for(let x=0; x<8; x++){
+      if(getFlips(x,y,player).length > 0){
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
-    const particles = [];
+function countStones(){
+  let black = 0;
+  let white = 0;
 
-    for(let i=0; i<120; i++){
+  for(let y=0; y<8; y++){
+    for(let x=0; x<8; x++){
+      if(board[y][x] === 1) black++;
+      if(board[y][x] === 2) white++;
+    }
+  }
 
-      particles.push({
-        x:Math.random()*canvas.width,
-        y:Math.random()*canvas.height,
-        size:Math.random()*2,
-        speedX:(Math.random()-0.5)*0.5,
-        speedY:(Math.random()-0.5)*0.5
+  return {black, white};
+}
+
+function drawBoard(){
+  boardElement.innerHTML = "";
+
+  const counts = countStones();
+
+  info.textContent =
+    currentPlayer === 1
+    ? `BLACK TURN   BLACK:${counts.black} WHITE:${counts.white}`
+    : `WHITE TURN   BLACK:${counts.black} WHITE:${counts.white}`;
+
+  for(let y=0; y<8; y++){
+    for(let x=0; x<8; x++){
+      const cell = document.createElement("div");
+      cell.className = "cell";
+
+      const flips = getFlips(x,y,currentPlayer);
+
+      if(flips.length > 0){
+        cell.classList.add("valid");
+      }
+
+      cell.addEventListener("click", () => {
+        placeStone(x,y);
       });
 
+      if(board[y][x] !== 0){
+        const stone = document.createElement("div");
+        stone.className = "stone";
+        stone.classList.add(board[y][x] === 1 ? "black" : "white");
+        cell.appendChild(stone);
+      }
+
+      boardElement.appendChild(cell);
     }
+  }
+}
 
-    function animate(){
+function placeStone(x,y){
+  const flips = getFlips(x,y,currentPlayer);
 
-      ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(flips.length === 0){
+    return;
+  }
 
-      ctx.fillStyle = "white";
+  board[y][x] = currentPlayer;
 
-      particles.forEach(p => {
+  for(const [fx,fy] of flips){
+    board[fy][fx] = currentPlayer;
+  }
 
-        p.x += p.speedX;
-        p.y += p.speedY;
+  currentPlayer = currentPlayer === 1 ? 2 : 1;
 
-        if(p.x < 0 || p.x > canvas.width){
-          p.speedX *= -1;
-        }
+  if(!hasValidMove(currentPlayer)){
+    currentPlayer = currentPlayer === 1 ? 2 : 1;
 
-        if(p.y < 0 || p.y > canvas.height){
-          p.speedY *= -1;
-        }
-
-        ctx.beginPath();
-        ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
-        ctx.fill();
-
-      });
-
-      requestAnimationFrame(animate);
-
+    if(!hasValidMove(currentPlayer)){
+      endGame();
+      return;
     }
+  }
 
-    animate();
+  drawBoard();
+}
 
-    window.addEventListener("resize",()=>{
+function endGame(){
+  const counts = countStones();
 
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+  if(counts.black > counts.white){
+    info.textContent = `GAME OVER  BLACK WINS! BLACK:${counts.black} WHITE:${counts.white}`;
+  }else if(counts.white > counts.black){
+    info.textContent = `GAME OVER  WHITE WINS! BLACK:${counts.black} WHITE:${counts.white}`;
+  }else{
+    info.textContent = `GAME OVER  DRAW! BLACK:${counts.black} WHITE:${counts.white}`;
+  }
+}
 
-    });
+function restartGame(){
+  initBoard();
+  drawBoard();
+}
 
-  </script>
+initBoard();
+drawBoard();
+</script>
 
 </body>
 </html>
