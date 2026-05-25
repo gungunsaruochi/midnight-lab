@@ -6,35 +6,224 @@
   <title>Midnight Lab</title>
 
   <style>
-    body{
+    *{
       margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    body{
       background:black;
       color:white;
+      font-family:sans-serif;
+      overflow:hidden;
+    }
+
+    canvas{
+      position:fixed;
+      top:0;
+      left:0;
+      z-index:-1;
+    }
+
+    .container{
+      width:100%;
+      height:100vh;
+
       display:flex;
+      flex-direction:column;
       justify-content:center;
       align-items:center;
-      height:100vh;
-      overflow:hidden;
-      font-family:sans-serif;
+
+      gap:30px;
     }
 
     h1{
-      font-size:4rem;
+      font-size:5rem;
+      letter-spacing:8px;
+
       animation: glow 2s infinite alternate;
+    }
+
+    p{
+      opacity:0.7;
+      font-size:1.1rem;
+    }
+
+    .buttons{
+      display:flex;
+      gap:20px;
+    }
+
+    button{
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.2);
+
+      color:white;
+
+      padding:15px 30px;
+
+      cursor:pointer;
+
+      transition:0.3s;
+
+      backdrop-filter:blur(10px);
+    }
+
+    button:hover{
+      background:white;
+      color:black;
+
+      transform:scale(1.1);
+    }
+
+    .panel{
+      margin-top:20px;
+      width:80%;
+      max-width:700px;
+
+      text-align:center;
+
+      line-height:2;
+
+      opacity:0.8;
     }
 
     @keyframes glow{
       from{
-        text-shadow:0 0 10px #fff;
+        text-shadow:0 0 10px white;
       }
+
       to{
-        text-shadow:0 0 40px #00ffff;
+        text-shadow:
+          0 0 20px cyan,
+          0 0 40px cyan,
+          0 0 60px cyan;
       }
     }
   </style>
 </head>
+
 <body>
 
-<h1>Hello World</h1>
+  <canvas id="bg"></canvas>
+
+  <div class="container">
+
+    <h1>Midnight Lab</h1>
+
+    <p>
+      strange playground for thoughts
+    </p>
+
+    <div class="buttons">
+      <button onclick="changePanel('observe')">
+        OBSERVE
+      </button>
+
+      <button onclick="changePanel('play')">
+        PLAY
+      </button>
+
+      <button onclick="changePanel('study')">
+        STUDY
+      </button>
+    </div>
+
+    <div class="panel" id="panel">
+      Welcome to Midnight Lab.
+    </div>
+
+  </div>
+
+  <script>
+
+    const panel = document.getElementById("panel");
+
+    function changePanel(mode){
+
+      if(mode === "observe"){
+        panel.innerHTML = `
+          Watch the particles drift slowly
+          through the dark.
+        `;
+      }
+
+      if(mode === "play"){
+        panel.innerHTML = `
+          Click the screen and create waves.
+        `;
+      }
+
+      if(mode === "study"){
+        panel.innerHTML = `
+          Focus mode coming soon...
+        `;
+      }
+
+    }
+
+    // canvas
+
+    const canvas = document.getElementById("bg");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+
+    for(let i=0; i<120; i++){
+
+      particles.push({
+        x:Math.random()*canvas.width,
+        y:Math.random()*canvas.height,
+        size:Math.random()*2,
+        speedX:(Math.random()-0.5)*0.5,
+        speedY:(Math.random()-0.5)*0.5
+      });
+
+    }
+
+    function animate(){
+
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      ctx.fillStyle = "white";
+
+      particles.forEach(p => {
+
+        p.x += p.speedX;
+        p.y += p.speedY;
+
+        if(p.x < 0 || p.x > canvas.width){
+          p.speedX *= -1;
+        }
+
+        if(p.y < 0 || p.y > canvas.height){
+          p.speedY *= -1;
+        }
+
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+        ctx.fill();
+
+      });
+
+      requestAnimationFrame(animate);
+
+    }
+
+    animate();
+
+    window.addEventListener("resize",()=>{
+
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+    });
+
+  </script>
+
 </body>
 </html>
