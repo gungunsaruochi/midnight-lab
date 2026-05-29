@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Midnight Othello</title>
+<title>Midnight Othello CPU</title>
 
 <style>
 body{
@@ -87,6 +87,10 @@ const info = document.getElementById("info");
 
 let board = [];
 let currentPlayer = 1;
+let gameOver = false;
+
+const HUMAN = 1;
+const CPU = 2;
 
 const directions = [
   [-1,-1], [0,-1], [1,-1],
@@ -102,7 +106,8 @@ function initBoard(){
   board[4][3] = 1;
   board[4][4] = 2;
 
-  currentPlayer = 1;
+  currentPlayer = HUMAN;
+  gameOver = false;
 }
 
 function isInside(x,y){
@@ -166,10 +171,12 @@ function drawBoard(){
 
   const counts = countStones();
 
-  info.textContent =
-    currentPlayer === 1
-    ? `BLACK TURN   BLACK:${counts.black} WHITE:${counts.white}`
-    : `WHITE TURN   BLACK:${counts.black} WHITE:${counts.white}`;
+  if(!gameOver){
+    info.textContent =
+      currentPlayer === HUMAN
+      ? `YOUR TURN   BLACK:${counts.black} WHITE:${counts.white}`
+      : `CPU THINKING...   BLACK:${counts.black} WHITE:${counts.white}`;
+  }
 
   for(let y=0; y<8; y++){
     for(let x=0; x<8; x++){
@@ -178,12 +185,14 @@ function drawBoard(){
 
       const flips = getFlips(x,y,currentPlayer);
 
-      if(flips.length > 0){
+      if(currentPlayer === HUMAN && flips.length > 0){
         cell.classList.add("valid");
       }
 
       cell.addEventListener("click", () => {
-        placeStone(x,y);
+        if(currentPlayer === HUMAN){
+          placeStone(x,y);
+        }
       });
 
       if(board[y][x] !== 0){
@@ -199,6 +208,10 @@ function drawBoard(){
 }
 
 function placeStone(x,y){
+  if(gameOver){
+    return;
+  }
+
   const flips = getFlips(x,y,currentPlayer);
 
   if(flips.length === 0){
@@ -211,10 +224,14 @@ function placeStone(x,y){
     board[fy][fx] = currentPlayer;
   }
 
-  currentPlayer = currentPlayer === 1 ? 2 : 1;
+  switchTurn();
+}
+
+function switchTurn(){
+  currentPlayer = currentPlayer === HUMAN ? CPU : HUMAN;
 
   if(!hasValidMove(currentPlayer)){
-    currentPlayer = currentPlayer === 1 ? 2 : 1;
+    currentPlayer = currentPlayer === HUMAN ? CPU : HUMAN;
 
     if(!hasValidMove(currentPlayer)){
       endGame();
@@ -223,18 +240,50 @@ function placeStone(x,y){
   }
 
   drawBoard();
+
+  if(currentPlayer === CPU){
+    setTimeout(cpuMove, 600);
+  }
+}
+
+function cpuMove(){
+  if(gameOver || currentPlayer !== CPU){
+    return;
+  }
+
+  let bestMove = null;
+  let bestScore = -1;
+
+  for(let y=0; y<8; y++){
+    for(let x=0; x<8; x++){
+      const flips = getFlips(x,y,CPU);
+
+      if(flips.length > bestScore){
+        bestScore = flips.length;
+        bestMove = [x,y];
+      }
+    }
+  }
+
+  if(bestMove){
+    placeStone(bestMove[0], bestMove[1]);
+  }
 }
 
 function endGame(){
+  gameOver = true;
+
   const counts = countStones();
 
   if(counts.black > counts.white){
-    info.textContent = `GAME OVER  BLACK WINS! BLACK:${counts.black} WHITE:${counts.white}`;
+    info.textContent = `GAME OVER  YOU WIN! BLACK:${counts.black} WHITE:${counts.white}`;
   }else if(counts.white > counts.black){
-    info.textContent = `GAME OVER  WHITE WINS! BLACK:${counts.black} WHITE:${counts.white}`;
+    info.textContent = `GAME OVER  CPU WINS! BLACK:${counts.black} WHITE:${counts.white}`;
   }else{
     info.textContent = `GAME OVER  DRAW! BLACK:${counts.black} WHITE:${counts.white}`;
   }
+
+  drawBoard();
 }
 
 function restartGame(){
