@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>争覇スキルDB</title>
+<style>
+body{
+  margin:0;
+  background:#0b0b0f;
+  color:white;
+  font-family:sans-serif;
+  padding:20px;
+}
+.container{max-width:1200px;margin:auto}
+h1{text-align:center}
+input, textarea, select{
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+  border:none;
+  border-radius:8px;
+}
+button{
+  padding:9px 14px;
+  margin:4px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1.4fr;
+  gap:20px;
+}
+.card{
+  background:#1b1b25;
+  padding:14px;
+  border-radius:12px;
+  margin:10px 0;
+  border:1px solid #333;
+}
+.small{opacity:.75;font-size:14px}
+.tag{
+  display:inline-block;
+  background:#33334a;
+  padding:4px 8px;
+  border-radius:999px;
+  margin:3px;
+}
+a{color:#7cc7ff}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1>争覇スキルDB</h1>
+
+<div class="grid">
+
+<div>
+  <h2>データ追加 / 編集</h2>
+
+  <input id="name" placeholder="武将名">
+  <input id="country" placeholder="国 例：秦 / 趙 / 楚">
+  <input id="unit" placeholder="兵種 例：歩兵 / 騎兵 / 弓兵">
+  <input id="role" placeholder="役割 例：火力 / 防御 / 回復 / バフ / 妨害">
+  <input id="skillName" placeholder="スキル名">
+  <textarea id="skillText" placeholder="スキル効果"></textarea>
+  <textarea id="memo" placeholder="メモ"></textarea>
+  <input id="url" placeholder="元ページURL">
+
+  <button onclick="saveCharacter()">保存</button>
+  <button onclick="clearForm()">入力欄リセット</button>
+
+  <p class="small">※データはこのブラウザ内に保存される。</p>
+</div>
+
+<div>
+  <h2>検索</h2>
+  <input id="search" placeholder="武将名・スキル・役割などで検索" oninput="render()">
+
+  <select id="roleFilter" onchange="render()">
+    <option value="">役割すべて</option>
+    <option value="火力">火力</option>
+    <option value="防御">防御</option>
+    <option value="回復">回復</option>
+    <option value="バフ">バフ</option>
+    <option value="妨害">妨害</option>
+  </select>
+
+  <div id="count"></div>
+  <div id="list"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+let editIndex = null;
+
+let characters = JSON.parse(localStorage.getItem("souhaCharacters")) || [
+  {
+    name:"信",
+    country:"秦",
+    unit:"歩兵",
+    role:"火力",
+    skillName:"未入力",
+    skillText:"ここに争覇スキル効果を入力",
+    memo:"",
+    url:""
+  },
+  {
+    name:"王騎",
+    country:"秦",
+    unit:"騎兵",
+    role:"火力 / バフ",
+    skillName:"未入力",
+    skillText:"ここに争覇スキル効果を入力",
+    memo:"",
+    url:""
+  },
+  {
+    name:"羌瘣",
+    country:"秦",
+    unit:"歩兵",
+    role:"火力",
+    skillName:"未入力",
+    skillText:"ここに争覇スキル効果を入力",
+    memo:"",
+    url:""
+  }
+];
+
+function saveLocal(){
+  localStorage.setItem("souhaCharacters", JSON.stringify(characters));
+}
+
+function getFormData(){
+  return {
+    name:document.getElementById("name").value.trim(),
+    country:document.getElementById("country").value.trim(),
+    unit:document.getElementById("unit").value.trim(),
+    role:document.getElementById("role").value.trim(),
+    skillName:document.getElementById("skillName").value.trim(),
+    skillText:document.getElementById("skillText").value.trim(),
+    memo:document.getElementById("memo").value.trim(),
+    url:document.getElementById("url").value.trim()
+  };
+}
+
+function saveCharacter(){
+  const data = getFormData();
+
+  if(!data.name){
+    alert("武将名を入れて");
+    return;
+  }
+
+  if(editIndex === null){
+    characters.push(data);
+  }else{
+    characters[editIndex] = data;
+    editIndex = null;
+  }
+
+  saveLocal();
+  clearForm();
+  render();
+}
+
+function clearForm(){
+  editIndex = null;
+  ["name","country","unit","role","skillName","skillText","memo","url"].forEach(id=>{
+    document.getElementById(id).value = "";
+  });
+}
+
+function editCharacter(index){
+  const c = characters[index];
+  editIndex = index;
+
+  document.getElementById("name").value = c.name;
+  document.getElementById("country").value = c.country;
+  document.getElementById("unit").value = c.unit;
+  document.getElementById("role").value = c.role;
+  document.getElementById("skillName").value = c.skillName;
+  document.getElementById("skillText").value = c.skillText;
+  document.getElementById("memo").value = c.memo;
+  document.getElementById("url").value = c.url;
+
+  window.scrollTo(0,0);
+}
+
+function deleteCharacter(index){
+  if(!confirm("削除する？")){
+    return;
+  }
+
+  characters.splice(index,1);
+  saveLocal();
+  render();
+}
+
+function render(){
+  const q = document.getElementById("search").value.trim();
+  const roleFilter = document.getElementById("roleFilter").value;
+
+  const list = characters
+    .map((c,index)=>({...c,index}))
+    .filter(c=>{
+      const text = [
+        c.name,c.country,c.unit,c.role,c.skillName,c.skillText,c.memo
+      ].join(" ");
+
+      const matchKeyword = text.includes(q);
+      const matchRole = roleFilter === "" || c.role.includes(roleFilter);
+
+      return matchKeyword && matchRole;
+    });
+
+  document.getElementById("count").textContent =
+    `${list.length}件 / ${characters.length}件`;
+
+  document.getElementById("list").innerHTML = list.map(c=>`
+    <div class="card">
+      <h2>${c.name}</h2>
+
+      <div>
+        <span class="tag">${c.country || "国未設定"}</span>
+        <span class="tag">${c.unit || "兵種未設定"}</span>
+        <span class="tag">${c.role || "役割未設定"}</span>
+      </div>
+
+      <h3>${c.skillName || "スキル名未入力"}</h3>
+      <p>${c.skillText || "スキル効果未入力"}</p>
+
+      <p class="small">${c.memo || ""}</p>
+
+      ${c.url ? `<a href="${c.url}" target="_blank">元ページを開く</a>` : ""}
+
+      <br><br>
+      <button onclick="editCharacter(${c.index})">編集</button>
+      <button onclick="deleteCharacter(${c.index})">削除</button>
+    </div>
+  `).join("");
+}
+
+render();
+</script>
+
+</body>
+</html>
